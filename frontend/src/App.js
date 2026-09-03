@@ -70,8 +70,7 @@ function App() {
     } catch (err) {
       console.error('Error fetching:', err);
     }
-  };
-  const fetchFavorites = async () => { 
+  }; 
     try {
       const response = await fetch(`http://localhost:5000/api/favorites/${currentUser.id}`);
       const data = await response.json();
