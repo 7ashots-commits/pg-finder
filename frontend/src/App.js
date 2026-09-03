@@ -33,21 +33,6 @@ function App() {
     }
   }, []);
 
- useEffect(() => {
-  const loadFavorites = async () => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/favorites/${currentUser.id}`);
-      const data = await response.json();
-      setFavorites(data.map(fav => fav.property_id));
-    } catch (err) {
-      console.error('Error fetching favorites:', err);
-    }
-  };
-  
-  if (currentUser) {
-    loadFavorites();
-  }
-}, [currentUser]);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('signup') === 'true') {
@@ -70,37 +55,13 @@ function App() {
     } catch (err) {
       console.error('Error fetching:', err);
     }
-  }; 
-    try {
-      const response = await fetch(`http://localhost:5000/api/favorites/${currentUser.id}`);
-      const data = await response.json();
-      setFavorites(data.map(fav => fav.property_id));
-    } catch (err) {
-      console.error('Error fetching favorites:', err);
-    }
   };
 
-  const toggleFavorite = async (propertyId) => {
-    try {
-      const isFavorited = favorites.includes(propertyId);
-      
-      if (isFavorited) {
-        await fetch(`http://localhost:5000/api/favorites/${propertyId}`, {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: currentUser.id })
-        });
-        setFavorites(favorites.filter(id => id !== propertyId));
-      } else {
-        await fetch(`http://localhost:5000/api/favorites/${propertyId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: currentUser.id })
-        });
-        setFavorites([...favorites, propertyId]);
-      }
-    } catch (err) {
-      console.error('Error toggling favorite:', err);
+  const toggleFavorite = (propertyId) => {
+    if (favorites.includes(propertyId)) {
+      setFavorites(favorites.filter(id => id !== propertyId));
+    } else {
+      setFavorites([...favorites, propertyId]);
     }
   };
 
