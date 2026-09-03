@@ -43,7 +43,7 @@ function App() {
 
   const fetchProperties = async (location = '', min = '', max = '') => {
     try {
-      let url = 'http://localhost:5000/api/properties';
+      let url = 'https://pg-finder-production-3df5.up.railway.app//api/properties';
       const params = new URLSearchParams();
       if (location) params.append('location', location);
       if (min) params.append('minPrice', min);
@@ -85,7 +85,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:5000/api/properties', {
+      const response = await fetch('https://pg-finder-production-3df5.up.railway.app/api/properties', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -127,7 +127,7 @@ function App() {
   const handleDelete = async (id) => {
     if (window.confirm('Kya aap sure ho delete karna hai?')) {
       try {
-        await fetch(`http://localhost:5000/api/properties/${id}`, {
+        await fetch(/api/properties/${id}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' }
         });
