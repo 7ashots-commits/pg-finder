@@ -12,6 +12,10 @@ app.use(cors({
 }));
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.json({ success: true, message: 'Real estate property finder backend is running!' });
+});
+
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
 });
