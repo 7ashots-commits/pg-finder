@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+ import React, { useState, useEffect } from 'react';
 import './App.css';
 import Login from './Login';
 import Signup from './Signup';
@@ -25,6 +25,8 @@ function App() {
     images: []
   });
 
+  const BACKEND_URL = 'https://pg-finder-production-3df5.up.railway.app';
+
   useEffect(() => {
     const user = localStorage.getItem('user');
     if (user) {
@@ -43,7 +45,7 @@ function App() {
 
   const fetchProperties = async (location = '', min = '', max = '') => {
     try {
-      let url = 'https://pg-finder-production-3df5.up.railway.app//api/properties';
+      let url = `${BACKEND_URL}/api/properties`;
       const params = new URLSearchParams();
       if (location) params.append('location', location);
       if (min) params.append('minPrice', min);
@@ -85,7 +87,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('https://pg-finder-production-3df5.up.railway.app/api/properties', {
+      const response = await fetch(`${BACKEND_URL}/api/properties`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -109,7 +111,7 @@ function App() {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      await fetch(`http://pg-finder-production-3df5.up.railway.app/api/properties/${editingId}`, {
+      await fetch(`${BACKEND_URL}/api/properties/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -127,7 +129,7 @@ function App() {
   const handleDelete = async (id) => {
     if (window.confirm('Kya aap sure ho delete karna hai?')) {
       try {
-        await fetch(`/api/properties/${id}`, {
+        await fetch(`${BACKEND_URL}/api/properties/${id}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' }
         });
