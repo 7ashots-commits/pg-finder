@@ -109,7 +109,7 @@ function App() {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      await fetch(`http://localhost:5000/api/properties/${editingId}`, {
+      await fetch(`http://pg-finder-production-3df5.up.railway.app/api/properties/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -127,7 +127,7 @@ function App() {
   const handleDelete = async (id) => {
     if (window.confirm('Kya aap sure ho delete karna hai?')) {
       try {
-        await fetch(/api/properties/${id}`, {
+        await fetch(`/api/properties/${id}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' }
         });
