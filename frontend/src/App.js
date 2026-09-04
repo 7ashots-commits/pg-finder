@@ -2,6 +2,7 @@
 import './App.css';
 import Login from './Login';
 import Signup from './Signup';
+import { Analytics } from '@vercel/analytics/react';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -232,6 +233,7 @@ function App() {
           </div>
         ))}
       </div>
+      <Analytics />
     </div>
   );
 }
