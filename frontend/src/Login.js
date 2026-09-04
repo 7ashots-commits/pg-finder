@@ -12,7 +12,7 @@ function Login({ onLoginSuccess }) {
     setError('');
 
     try {
-      const response = await fetch('pg-finder-production-3df5.up.railway.app/api/auth/login', {
+      const response = await fetch('https://pg-finder-production-3df5.up.railway.app/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
