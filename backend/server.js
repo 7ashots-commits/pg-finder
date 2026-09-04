@@ -6,8 +6,10 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
-
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  credentials: true
+}));
 app.use(express.json());
 
 app.get('/api/test', (req, res) => {
