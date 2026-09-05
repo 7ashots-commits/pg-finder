@@ -1,25 +1,45 @@
+console.log('🔄 server.js starting...');
+
 const express = require('express');
+console.log('✅ express imported');
+
 const cors = require('cors');
+console.log('✅ cors imported');
+
 require('dotenv').config();
+console.log('✅ dotenv loaded');
+
 const supabase = require('./db');
+console.log('✅ supabase imported');
+
 const multer = require('multer');
+console.log('✅ multer imported');
+
 const upload = multer({ storage: multer.memoryStorage() });
+console.log('✅ multer storage configured');
 
 const app = express();
+console.log('✅ express app created');
 
 // MIDDLEWARE
 app.use(cors({
   origin: '*',
   credentials: true
 }));
+console.log('✅ CORS middleware added');
+
 app.use(express.json());
+console.log('✅ express.json middleware added');
+
+console.log('🔄 Adding routes...');
 
 // TEST ROUTE
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
 });
+console.log('✅ /api/test route added');
 
-// GET ALL PROPERTIES (with search/filter)
+// GET ALL PROPERTIES
 app.get('/api/properties', async (req, res) => {
   try {
     const { location, minPrice, maxPrice } = req.query;
@@ -34,6 +54,7 @@ app.get('/api/properties', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+console.log('✅ /api/properties routes added');
 
 // ADD PROPERTY
 app.post('/api/properties', async (req, res) => {
@@ -69,6 +90,7 @@ app.delete('/api/properties/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+console.log('✅ Property CRUD routes added');
 
 // IMAGE UPLOAD
 app.post('/api/upload', upload.single('file'), async (req, res) => {
@@ -83,6 +105,7 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+console.log('✅ /api/upload route added');
 
 // SIGNUP
 app.post('/api/auth/signup', async (req, res) => {
@@ -110,6 +133,7 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+console.log('✅ Auth routes added');
 
 // GET CURRENT USER
 app.get('/api/auth/me', async (req, res) => {
@@ -124,8 +148,6 @@ app.get('/api/auth/me', async (req, res) => {
     res.status(401).json({ error: err.message });
   }
 });
-
-// ===== FAVORITES ROUTES =====
 
 // GET FAVORITES
 app.get('/api/favorites/:userId', async (req, res) => {
@@ -164,9 +186,11 @@ app.delete('/api/favorites/:propertyId', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+console.log('✅ Favorites routes added');
 
-// START SERVER
+console.log('🔄 Starting server...');
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`✅ Server running on http://localhost:${PORT}`);
 });
