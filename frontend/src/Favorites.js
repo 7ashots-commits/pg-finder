@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 function Favorites({ currentUser, onBack, BACKEND_URL }) {
   const [favorites, setFavorites] = useState([]);
@@ -10,15 +10,17 @@ function Favorites({ currentUser, onBack, BACKEND_URL }) {
     }
   }, [currentUser]);
 
-  const fetchFavorites = async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/favorites/${currentUser.id}`);
-      const data = await response.json();
-      setFavorites(data);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching favorites:', err);
-      setLoading(false);
+  const fetchFavorites = useCallback(async () => {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/favorites/${currentUser.id}`);
+    const data = await response.json();
+    setFavorites(data);
+    setLoading(false);
+  } catch (err) {
+    console.error('Error fetching favorites:', err);
+    setLoading(false);
+  }
+}, [currentUser.id, BACKEND_URL]);
     }
   };
 
