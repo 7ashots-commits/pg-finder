@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import Login from './Login';
 import Signup from './Signup';
+import Favorites from './Favorites';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
   const [showSignup, setShowSignup] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
   const [properties, setProperties] = useState([]);
   const [favorites, setFavorites] = useState([]);
   const [searchLocation, setSearchLocation] = useState('');
@@ -35,6 +37,7 @@ function App() {
     if (user) {
       setCurrentUser(JSON.parse(user));
       fetchProperties();
+      fetchFavorites(JSON.parse(user).id);
     }
   }, []);
 
@@ -59,6 +62,16 @@ function App() {
       setProperties(data);
     } catch (err) {
       console.error('Error fetching:', err);
+    }
+  };
+
+  const fetchFavorites = async (userId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/favorites/${userId}`);
+      const data = await response.json();
+      setFavorites(data.map(fav => fav.property_id));
+    } catch (err) {
+      console.error('Error fetching favorites:', err);
     }
   };
 
@@ -115,11 +128,27 @@ function App() {
     });
   };
 
-  const toggleFavorite = (propertyId) => {
-    if (favorites.includes(propertyId)) {
-      setFavorites(favorites.filter(id => id !== propertyId));
-    } else {
-      setFavorites([...favorites, propertyId]);
+  const toggleFavorite = async (propertyId) => {
+    try {
+      if (favorites.includes(propertyId)) {
+        // Remove from favorites
+        await fetch(`${BACKEND_URL}/api/favorites/${propertyId}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.id })
+        });
+        setFavorites(favorites.filter(id => id !== propertyId));
+      } else {
+        // Add to favorites
+        await fetch(`${BACKEND_URL}/api/favorites/${propertyId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: currentUser.id })
+        });
+        setFavorites([...favorites, propertyId]);
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
     }
   };
 
@@ -200,6 +229,11 @@ function App() {
     }
   };
 
+  // Show Favorites Page
+  if (showFavorites && currentUser) {
+    return <Favorites currentUser={currentUser} onBack={() => setShowFavorites(false)} BACKEND_URL={BACKEND_URL} />;
+  }
+
   if (!currentUser) {
     return showSignup ? (
       <Signup onSignupSuccess={() => setShowSignup(false)} />
@@ -212,8 +246,13 @@ function App() {
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', backgroundColor: '#f9f9f9', minHeight: '100vh' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
         <h1 style={{ color: '#333' }}>🏠 PG Finder</h1>
-        <div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <p style={{ marginRight: '20px', display: 'inline' }}>Welcome, <strong>{currentUser.name}</strong> ({currentUser.user_type})</p>
+          
+          {currentUser.user_type === 'tenant' && (
+            <button onClick={() => setShowFavorites(true)} style={{ padding: '8px 15px', backgroundColor: '#e74c3c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>❤️ Favorites ({favorites.length})</button>
+          )}
+          
           <button onClick={handleLogout} style={{ padding: '8px 15px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Logout</button>
         </div>
       </div>
@@ -287,7 +326,7 @@ function App() {
         {properties && properties.map((property) => (
           <div key={property.id} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '15px', backgroundColor: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', position: 'relative' }}>
             
-            {/* IMAGE CAROUSEL */}
+            {/* IMAGE */}
             {property.images && property.images.length > 0 && (
               <div style={{ marginBottom: '10px', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#f0f0f0', height: '200px' }}>
                 <img src={property.images[0]} alt="Property" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
