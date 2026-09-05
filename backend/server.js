@@ -7,7 +7,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
 
-// MIDDLEWARE - सही order में
+// MIDDLEWARE
 app.use(cors({
   origin: '*',
   credentials: true
@@ -122,6 +122,46 @@ app.get('/api/auth/me', async (req, res) => {
     res.json({ user: userData });
   } catch (err) {
     res.status(401).json({ error: err.message });
+  }
+});
+
+// ===== FAVORITES ROUTES =====
+
+// GET FAVORITES
+app.get('/api/favorites/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { data, error } = await supabase.from('favorites').select('property_id, properties(*)').eq('user_id', userId);
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ADD TO FAVORITES
+app.post('/api/favorites/:propertyId', async (req, res) => {
+  try {
+    const { propertyId } = req.params;
+    const { userId } = req.body;
+    const { data, error } = await supabase.from('favorites').insert([{ user_id: userId, property_id: propertyId }]).select();
+    if (error) throw error;
+    res.json({ message: 'Added to favorites', data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// REMOVE FROM FAVORITES
+app.delete('/api/favorites/:propertyId', async (req, res) => {
+  try {
+    const { propertyId } = req.params;
+    const { userId } = req.body;
+    const { data, error } = await supabase.from('favorites').delete().eq('user_id', userId).eq('property_id', propertyId).select();
+    if (error) throw error;
+    res.json({ message: 'Removed from favorites', data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
