@@ -95,14 +95,55 @@ console.log('✅ Property CRUD routes added');
 // IMAGE UPLOAD
 app.post('/api/upload', upload.single('file'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    console.log('📸 Upload request received');
+    console.log('File:', req.file ? 'YES' : 'NO');
+    console.log('File name:', req.file?.originalname);
+    console.log('File size:', req.file?.size);
+    
+    if (!req.file) {
+      console.error('❌ No file uploaded');
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    console.log('🔄 Preparing upload to Supabase...');
     const fileName = `${Date.now()}-${req.file.originalname}`;
-    const { data, error } = await supabase.storage.from('property-images').upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
-    if (error) throw error;
-    const { data: { publicUrl } } = supabase.storage.from('property-images').getPublicUrl(fileName);
-    res.json({ url: publicUrl });
+    console.log('📝 File name:', fileName);
+    
+    console.log('🔄 Uploading to Supabase Storage...');
+    const { data, error } = await supabase.storage
+      .from('property-images')
+      .upload(fileName, req.file.buffer, { 
+        contentType: req.file.mimetype,
+        upsert: false 
+      });
+    
+    if (error) {
+      console.error('❌ Supabase Storage error:', error);
+      throw error;
+    }
+    
+    console.log('✅ File uploaded to Supabase');
+    console.log('📍 Uploaded data:', data);
+    
+    console.log('🔄 Getting public URL...');
+    const { data: { publicUrl } } = supabase.storage
+      .from('property-images')
+      .getPublicUrl(fileName);
+    
+    console.log('✅ Public URL:', publicUrl);
+    
+    res.json({ 
+      url: publicUrl,
+      message: 'Image uploaded successfully',
+      fileName: fileName 
+    });
+    
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('❌ Upload error:', err);
+    res.status(500).json({ 
+      error: err.message,
+      details: err.toString()
+    });
   }
 });
 console.log('✅ /api/upload route added');
