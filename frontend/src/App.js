@@ -17,6 +17,8 @@ function App() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [loadingProperties, setLoadingProperties] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -51,6 +53,8 @@ function App() {
 
   const fetchProperties = async (location = '', min = '', max = '') => {
     try {
+      setLoadingProperties(true);
+      setError('');
       let url = `${BACKEND_URL}/api/properties`;
       const params = new URLSearchParams();
       if (location) params.append('location', location);
@@ -60,8 +64,11 @@ function App() {
       const response = await fetch(url);
       const data = await response.json();
       setProperties(data);
+      setLoadingProperties(false);
     } catch (err) {
       console.error('Error fetching:', err);
+      setError('Failed to load properties');
+      setLoadingProperties(false);
     }
   };
 
@@ -69,7 +76,7 @@ function App() {
     try {
       const response = await fetch(`${BACKEND_URL}/api/favorites/${userId}`);
       const data = await response.json();
-      setFavorites(data.map(fav => fav.property_id));
+      setFavorites(data.map(fav => fav.property_id) || []);
     } catch (err) {
       console.error('Error fetching favorites:', err);
     }
@@ -104,6 +111,11 @@ function App() {
       });
 
       const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Upload failed');
+      }
+
       if (data.url) {
         setFormData({
           ...formData,
@@ -111,11 +123,11 @@ function App() {
         });
         setSelectedImage(null);
         setImagePreview(null);
-        alert('Image uploaded successfully!');
+        alert('✅ Image uploaded successfully!');
       }
     } catch (err) {
       console.error('Upload error:', err);
-      alert('Error uploading image');
+      alert('❌ Error uploading image: ' + err.message);
     } finally {
       setUploading(false);
     }
@@ -131,7 +143,6 @@ function App() {
   const toggleFavorite = async (propertyId) => {
     try {
       if (favorites.includes(propertyId)) {
-        // Remove from favorites
         await fetch(`${BACKEND_URL}/api/favorites/${propertyId}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -139,7 +150,6 @@ function App() {
         });
         setFavorites(favorites.filter(id => id !== propertyId));
       } else {
-        // Add to favorites
         await fetch(`${BACKEND_URL}/api/favorites/${propertyId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -172,6 +182,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setError('');
       const response = await fetch(`${BACKEND_URL}/api/properties`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -181,10 +192,10 @@ function App() {
       fetchProperties();
       setFormData({ title: '', description: '', price: '', location: '', rooms: '', bathrooms: '', amenities: '', phone: '', email: '', images: [] });
       setImagePreview(null);
-      alert('Property added!');
+      alert('✅ Property added!');
     } catch (err) {
       console.error('Error:', err);
-      alert('Error adding property');
+      setError('Error adding property');
     }
   };
 
@@ -197,6 +208,7 @@ function App() {
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
+      setError('');
       await fetch(`${BACKEND_URL}/api/properties/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -206,30 +218,30 @@ function App() {
       setEditingId(null);
       setFormData({ title: '', description: '', price: '', location: '', rooms: '', bathrooms: '', amenities: '', phone: '', email: '', images: [] });
       setImagePreview(null);
-      alert('Property updated!');
+      alert('✅ Property updated!');
     } catch (err) {
       console.error('Error:', err);
-      alert('Error updating property');
+      setError('Error updating property');
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Kya aap sure ho delete karna hai?')) {
+    if (window.confirm('Delete this property?')) {
       try {
+        setError('');
         await fetch(`${BACKEND_URL}/api/properties/${id}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' }
         });
         fetchProperties(searchLocation, minPrice, maxPrice);
-        alert('Property deleted!');
+        alert('✅ Property deleted!');
       } catch (err) {
         console.error('Error:', err);
-        alert('Error deleting property');
+        setError('Error deleting property');
       }
     }
   };
 
-  // Show Favorites Page
   if (showFavorites && currentUser) {
     return <Favorites currentUser={currentUser} onBack={() => setShowFavorites(false)} BACKEND_URL={BACKEND_URL} />;
   }
@@ -244,22 +256,24 @@ function App() {
 
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', backgroundColor: '#f9f9f9', minHeight: '100vh' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 style={{ color: '#333' }}>🏠 PG Finder</h1>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <p style={{ marginRight: '20px', display: 'inline' }}>Welcome, <strong>{currentUser.name}</strong> ({currentUser.user_type})</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+        <h1 style={{ color: '#333', margin: 0 }}>🏠 PG Finder</h1>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <p style={{ margin: 0, fontSize: '14px' }}>Welcome, <strong>{currentUser.name}</strong> ({currentUser.user_type})</p>
           
           {currentUser.user_type === 'tenant' && (
-            <button onClick={() => setShowFavorites(true)} style={{ padding: '8px 15px', backgroundColor: '#e74c3c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>❤️ Favorites ({favorites.length})</button>
+            <button onClick={() => setShowFavorites(true)} style={{ padding: '8px 15px', backgroundColor: '#e74c3c', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>❤️ Favorites ({favorites.length})</button>
           )}
           
-          <button onClick={handleLogout} style={{ padding: '8px 15px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Logout</button>
+          <button onClick={handleLogout} style={{ padding: '8px 15px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}>Logout</button>
         </div>
       </div>
 
+      {error && <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '10px', borderRadius: '4px', marginBottom: '20px' }}>❌ {error}</div>}
+
       <div style={{ backgroundColor: '#e8f4f8', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
-        <h2 style={{ color: '#333' }}>🔍 Search Properties</h2>
-        <form onSubmit={handleSearch} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+        <h2 style={{ color: '#333', marginTop: 0 }}>🔍 Search Properties</h2>
+        <form onSubmit={handleSearch} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
           <input type="text" placeholder="Search Location..." value={searchLocation} onChange={(e) => setSearchLocation(e.target.value)} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
           <input type="number" placeholder="Min Price (₹)" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
           <input type="number" placeholder="Max Price (₹)" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
@@ -270,23 +284,23 @@ function App() {
 
       {currentUser.user_type === 'landlord' && (
         <div style={{ backgroundColor: '#f5f5f5', padding: '20px', borderRadius: '8px', marginBottom: '30px' }}>
-          <h2 style={{ color: '#333' }}>{editingId ? '✏️ Edit Property' : '➕ Add Property'}</h2>
+          <h2 style={{ color: '#333', marginTop: 0 }}>{editingId ? '✏️ Edit Property' : '➕ Add Property'}</h2>
           <form onSubmit={editingId ? handleUpdate : handleSubmit}>
-            <input type="text" name="title" placeholder="Property Title" value={formData.title} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-            <textarea name="description" placeholder="Description" value={formData.description} onChange={handleChange} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '80px' }}></textarea>
-            <input type="number" name="price" placeholder="Price (₹)" value={formData.price} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-            <input type="text" name="location" placeholder="Location" value={formData.location} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-            <input type="number" name="rooms" placeholder="Number of Rooms" value={formData.rooms} onChange={handleChange} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-            <input type="number" name="bathrooms" placeholder="Number of Bathrooms" value={formData.bathrooms} onChange={handleChange} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-            <input type="text" name="amenities" placeholder="Amenities (WiFi, AC, Parking)" value={formData.amenities} onChange={handleChange} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-            <input type="tel" name="phone" placeholder="Phone Number" value={formData.phone} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
-            <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
+            <input type="text" name="title" placeholder="Property Title" value={formData.title} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+            <textarea name="description" placeholder="Description" value={formData.description} onChange={handleChange} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', minHeight: '80px', boxSizing: 'border-box' }}></textarea>
+            <input type="number" name="price" placeholder="Price (₹)" value={formData.price} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+            <input type="text" name="location" placeholder="Location" value={formData.location} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+            <input type="number" name="rooms" placeholder="Number of Rooms" value={formData.rooms} onChange={handleChange} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+            <input type="number" name="bathrooms" placeholder="Number of Bathrooms" value={formData.bathrooms} onChange={handleChange} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+            <input type="text" name="amenities" placeholder="Amenities (WiFi, AC, Parking)" value={formData.amenities} onChange={handleChange} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+            <input type="tel" name="phone" placeholder="Phone Number" value={formData.phone} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
+            <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} required style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
 
             {/* IMAGE UPLOAD SECTION */}
             <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '4px', marginBottom: '10px', border: '2px dashed #007bff' }}>
               <h3 style={{ color: '#333', marginTop: 0 }}>📸 Property Images</h3>
               
-              <input type="file" accept="image/*" onChange={handleImageChange} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc' }} />
+              <input type="file" accept="image/*" onChange={handleImageChange} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} />
               
               {imagePreview && (
                 <div style={{ marginBottom: '10px' }}>
@@ -322,11 +336,13 @@ function App() {
       )}
 
       <h2 style={{ color: '#333' }}>All Properties ({properties.length})</h2>
+      
+      {loadingProperties && <p style={{ textAlign: 'center' }}>⏳ Loading properties...</p>}
+      
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
         {properties && properties.map((property) => (
           <div key={property.id} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '15px', backgroundColor: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', position: 'relative' }}>
             
-            {/* IMAGE */}
             {property.images && property.images.length > 0 && (
               <div style={{ marginBottom: '10px', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#f0f0f0', height: '200px' }}>
                 <img src={property.images[0]} alt="Property" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -339,7 +355,7 @@ function App() {
               </button>
             )}
 
-            <h3 style={{ color: '#333' }}>{property.title}</h3>
+            <h3 style={{ color: '#333', marginTop: 0 }}>{property.title}</h3>
             <p><strong>Price:</strong> ₹{property.price}</p>
             <p><strong>Location:</strong> {property.location}</p>
             <p><strong>Rooms:</strong> {property.rooms}</p>
